@@ -1,39 +1,41 @@
-import csv
 import re
+import csv
 
 def format_phone(phone):
-    phone = re.sub(r'(\+7|8)?[\s\(\)-]*(\d{3})[\s\(\)-]*(\d{3})[\s\(\)-]*(\d{2})[\s\(\)-]*(\d{2})[\s\(\)-]*(доб\.\s*\d+)?', r'+7(\2)\3-\4-\5 \6', phone)
-    return phone
-
-def merge_duplicates(contacts_list):
-    contacts_dict = {}
-    
-    for contact in contacts_list:
-        key = (contact[0], contact[1], contact[2], format_phone(contact[5]))
-        if key not in contacts_dict:
-            contacts_dict[key] = contact
-        else:
-            existing_contact = contacts_dict[key]
-            for i in range(3, 6):
-                if not existing_contact[i]:
-                    existing_contact[i] = contact[i]
-    
-    merged_contacts = list(contacts_dict.values())
-    
-    return merged_contacts
+    phone = re.sub(r'\D', '', phone)
+    if len(phone) == 11:
+        return f'+7({phone[1:4]}){phone[4:7]}-{phone[7:9]}-{phone[9:11]}'
+    else:
+        return ''
 
 with open("phonebook_raw.csv") as f:
     rows = csv.reader(f, delimiter=",")
     contacts_list = list(rows)
 
 for contact in contacts_list:
-    contact[0] = contact[0].strip()
-    contact[1] = contact[1].strip()
-    contact[2] = contact[2].strip()
-    contact[5] = format_phone(contact[5])
+    if len(contact) >= 6:
+        if len(contact[0].split()) == 1:
+            lastname, firstname, surname = contact[0], '', ''
+        else:
+            parts = contact[0].split()
+            lastname = parts[0]
+            firstname = parts[1]
+            surname = parts[2] if len(parts) > 2 else ''
+        
+        contact[5] = format_phone(contact[5])
 
-contacts_list = merge_duplicates(contacts_list)
+        contact[0] = lastname
+        contact.insert(1, firstname)
+        contact.insert(2, surname)
 
-with open("phonebook.csv", "w") as f:
+unique_contacts = []
+seen = set()
+for contact in contacts_list:
+    key = (contact[0], contact[1], contact[2])
+    if key not in seen:
+        unique_contacts.append(contact)
+        seen.add(key)
+
+with open("phonebook.csv", "w", newline='') as f:
     datawriter = csv.writer(f, delimiter=',')
-    datawriter.writerows(contacts_list)
+    datawriter.writerows(unique_contacts)
