@@ -12,6 +12,8 @@ with open("phonebook_raw.csv") as f:
     rows = csv.reader(f, delimiter=",")
     contacts_list = list(rows)
 
+unique_contacts_dict = {}
+
 for contact in contacts_list:
     if len(contact) >= 6:
         if len(contact[0].split()) == 1:
@@ -21,20 +23,19 @@ for contact in contacts_list:
             lastname = parts[0]
             firstname = parts[1]
             surname = parts[2] if len(parts) > 2 else ''
-        
+
         contact[5] = format_phone(contact[5])
 
-        contact[0] = lastname
-        contact.insert(1, firstname)
-        contact.insert(2, surname)
+        key = (lastname, firstname, surname)
 
-unique_contacts = []
-seen = set()
-for contact in contacts_list:
-    key = (contact[0], contact[1], contact[2])
-    if key not in seen:
-        unique_contacts.append(contact)
-        seen.add(key)
+        if key in unique_contacts_dict:
+            for i in range(len(contact)):
+                if not unique_contacts_dict[key][i]:
+                    unique_contacts_dict[key][i] = contact[i]
+        else:
+            unique_contacts_dict[key] = contact
+
+unique_contacts = list(unique_contacts_dict.values())
 
 with open("phonebook.csv", "w", newline='') as f:
     datawriter = csv.writer(f, delimiter=',')
